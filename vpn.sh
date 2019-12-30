@@ -1,64 +1,73 @@
 #!/bin/bash
 
-
 # Path variables
 PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
 # VPN Variables
-IFACE="sslinterface"
-VPN_USER="[[your-username]]"
-VPN_HOST="[[vpn-host]]"
-VPN_PASS='[[your-password]]'
-PID="/var/run/openconnect.pid"
-TEMP_LOG="/tmp/status.txt"
+
+VPN_HOST='host'
+VPN_USER='username'
+VPN_PASS='password'
+VPN_CERT='' # if not needed leave it as empty string
+
+IFACE='sslinterface'
+PID='/var/run/openconnect.pid'
+TEMP_LOG='/tmp/vpn_status.txt'
 INFO="
-
 Usage: $(basename "$0") (start|stop|status|restart)
-
 "
 
 # Connect to Cisco SSL VPN using passwords from stdin (passed by VPN_PASS variable created prior)
-function connect_vpn(){
+function connect_vpn() { 
 
-if [ -f $PID ]
-	then
-		printf "\n\tOpenconnect is already running\n"
-		exit 1
-	else
-		echo ${VPN_PASS} | openconnect -b --user=${VPN_USER} --no-dtls ${VPN_HOST} --passwd-on-stdin > $TEMP_LOG 2>&1
-		if $(grep -i failed $TEMP_LOG)
-			then
-				printf "\n\tOpenconnect failed to start!\n"
-				cat $TEMP_LOG
-				exit 2
-			else
-				touch $PID
-				printf "\n\tOpenconnect started!\n"
-		fi
-fi
+    if [ -s $PID ]
+        then
+            printf "Openconnect is already running\n"
+            exit 1
+        else
+
+            # checking if ssl certificate is provided
+			if [ -z $VPN_CERT ] 
+                then
+				    CERT=''
+			    else
+				    CERT="--servercert $VPN_CERT"
+			fi
+
+            echo ${VPN_PASS} | openconnect ${VPN_HOST} --user=${VPN_USER} ${CERT} -b --no-dtls --passwd-on-stdin --pid-file $PID > $TEMP_LOG 2>&1
+            if $(grep -iq "connected as" $TEMP_LOG)
+                then
+                    touch $PID
+                    printf "Openconnect started!\n"
+                else
+                    printf "Openconnect failed to start!\n"
+                    cat $TEMP_LOG
+                    exit 2
+            fi
+    fi
 }
 
 # Check if openconnect is running through PID file
-function check_openconnect(){
+function check_openconnect() {
 
-if [ -f $PID ]
-	then
-		printf "\n\tOpenconnect is running!\n"
-	else
-		printf "\n\tOpenconnect is stopped\n"
-fi
+    if [ -s $PID ]
+        then
+            printf "Openconnect is running!\n"
+        else
+            printf "Openconnect is stopped\n"
+    fi
 }
 
 # Confirm if PID file exists, then kill it immediately
-function kill_openconnect(){
+function kill_openconnect() {
 
-if [ -f $PID ]
-	then
-		rm -f $PID >/dev/null 2>&1
-		kill -9 $(pgrep openconnect) >/dev/null 2>&1
-	else
-		printf "\n\tOpenconnect is not running!\n"
-fi
+    if [ -s $PID ]
+        then
+            rm -f $PID > /dev/null 2>&1
+            kill -9 $(pgrep openconnect) > /dev/null 2>&1
+        else
+            printf "Openconnect is not running!\n"
+    fi
 }
 
 case "$1" in
@@ -90,4 +99,3 @@ case "$1" in
 		exit 0
 		;;
 esac
-
