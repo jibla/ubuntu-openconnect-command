@@ -7,7 +7,7 @@ LOG_PATH='/tmp/vpn_status.txt'
 # format: 'host username password cert'. cert (certificate) is not mandatory
 CREDENTIALS=(
     'host1 username1 password1 cert1'
-    'host2 username2 password2 '
+    'host2 username2 password2'
     'host3 username3 password3 cert3'
 )
 
