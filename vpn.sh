@@ -77,12 +77,14 @@ function is_network_available() {
 }
 
 function is_vpn_running() {
-    test -s $PID_FILE_PATH 
+    test ! -f $PID_FILE_PATH && return 1
+    local pid=$(cat $PID_FILE_PATH)
+    kill -0 $pid > /dev/null 2>&1
 }
 
 function print_current_ip_address() {
-    local NEW_IP=$(dig +short myip.opendns.com @resolver1.opendns.com)
-    printf "Your IP address is $NEW_IP \n"
+    local ip=$(dig +short myip.opendns.com @resolver1.opendns.com)
+    printf "Your IP address is $ip \n"
 }
 
 function get_cert_if_provided() {
