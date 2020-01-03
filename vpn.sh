@@ -1,17 +1,15 @@
 #!/bin/bash
 
 PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-PID='/var/run/vpn.pid'
+PID_FILE_PATH='/var/run/vpn.pid'
 LOG_PATH='/tmp/vpn_status.txt'
-INFO="Usage: $(basename "$0") (start|stop|status|restart)"
 
 # format: 'host username password cert'. cert (certificate) is not mandatory
 CREDENTIALS=(
     'host1 username1 password1 cert1'
-    'host2 username2 password2'
+    'host2 username2 password2 '
     'host3 username3 password3 cert3'
 )
-
 
 function start() { 
 
@@ -35,8 +33,6 @@ function start() {
         local password=${credentials[2]}
         local cert=${credentials[3]}
 
-        echo "Connecting to $host"
-
         connect $host $username $password $cert
 
         if is_vpn_running
@@ -51,25 +47,20 @@ function start() {
 }
 
 function connect() {
+    echo "Connecting to $host"
     cert=$(get_cert_if_provided $4)
-    echo $3 | openconnect $1 --user=$2 ${cert} -b --no-dtls --passwd-on-stdin --pid-file $PID > $LOG_PATH 2>&1
+    echo $3 | openconnect $1 --user=$2 ${cert} -b --no-dtls --passwd-on-stdin --pid-file $PID_FILE_PATH > $LOG_PATH 2>&1
 }
 
 function status() {
-
-    if is_vpn_running
-        then
-            printf "VPN is running \n"
-        else
-            printf "VPN is stopped \n"
-    fi
+    is_vpn_running && printf "VPN is running \n" || printf "VPN is stopped \n"
 }
 
 function stop() {
 
     if is_vpn_running
         then
-            rm -f $PID > /dev/null 2>&1
+            rm -f $PID_FILE_PATH > /dev/null 2>&1
             kill -9 $(pgrep openconnect) > /dev/null 2>&1
     fi
     
@@ -77,12 +68,16 @@ function stop() {
     print_current_ip_address
 }
 
+function print_info() {
+    echo "Usage: $(basename "$0") (start|stop|status|restart)"
+}
+
 function is_network_available() {
     ping -q -c 1 -W 1 8.8.8.8 > /dev/null 2>&1;
 }
 
 function is_vpn_running() {
-    test -s $PID 
+    test -s $PID_FILE_PATH 
 }
 
 function print_current_ip_address() {
@@ -119,7 +114,7 @@ case "$1" in
 	
 	*)
 	
-		echo "$INFO"
+		print_info
 		exit 0
 		;;
 esac
