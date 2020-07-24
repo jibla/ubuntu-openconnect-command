@@ -5,6 +5,5 @@
 
 * Clone this repo
 * Modify `vpn.sh` with your credentials
-* chmod o+x vpn.sh
-* ln -s vpn.sh /usr/bin/vpn
+* `$ ln -s vpn.sh /usr/bin/vpn`
 * Use it with `sudo vpn start|stop|restart|status` command patterns.
